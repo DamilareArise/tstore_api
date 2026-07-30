@@ -1,5 +1,5 @@
 from django.shortcuts import render
-from .serializers import RegisterSerializer, LoginSerializer
+from .serializers import RegisterSerializer, LoginSerializer, ResetPasswordRequestSerializer, ResetPasswordSerializer 
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -44,3 +44,36 @@ class LoginView(APIView):
                     }
                  }, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+    
+class ResetPasswordRequestView(APIView):
+    def post(self, request):
+        serializer = ResetPasswordRequestSerializer(data=request.data)
+        if serializer.is_valid():
+            email = serializer.validated_data['email']
+            user = CustomUser.objects.get(email=email)
+            otp = user.generate_otp()
+            user.email_user(
+                subject="Reset Password",
+                message=f"{otp}"
+            )
+            return Response({"message": "OTP sent to this email."}, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        
+            
+class ResetPasswordView(APIView):
+    def post(self, request):
+        serializer = ResetPasswordSerializer(data=request.data)
+        if serializer.is_valid():
+            email = serializer.validated_data['email']
+            otp = serializer.validated_data['otp']
+            password = serializer.validated_data['password']
+            user = CustomUser.objects.get(email=email)
+            if user.verify_otp(otp):
+                user.set_password(password)
+                user.save()
+                return Response({'message': 'Password has been reset successfully.'})
+            else:
+                return Response({"message": "Invalid OTP"})
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    

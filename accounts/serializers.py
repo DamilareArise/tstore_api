@@ -43,3 +43,27 @@ class LoginSerializer(serializers.Serializer):
         data['user'] = user
         return data
         
+        
+class ResetPasswordRequestSerializer(serializers.Serializer):
+    email = serializers.EmailField()
+    
+    def validate_email(self, value):
+        if not CustomUser.objects.filter(email=value).exists():
+            raise serializers.ValidationError("User with this email does not exist.")
+        return value
+    
+    
+class ResetPasswordSerializer(serializers.Serializer):
+    email = serializers.EmailField()
+    otp = serializers.CharField(max_length=4, write_only=True)
+    password = serializers.CharField(min_length=6)
+    confirm_password = serializers.CharField(min_length=6)
+    
+    def validate(self, data):
+        if data['password'] != data['confirm_password']:
+            raise serializers.ValidationError("Passwords do not match.")
+        
+        if not CustomUser.objects.filter(email=data['email']).exists():
+            raise serializers.ValidationError("User with this email does not exist.")
+
+        return data

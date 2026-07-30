@@ -151,3 +151,10 @@ SIMPLE_JWT = {
     'ACCESS_TOKEN_LIFETIME': timedelta(minutes=60),
     'REFRESH_TOKEN_LIFETIME': timedelta(days=1)
 }
+
+EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
+EMAIL_HOST = 'sandbox.smtp.mailtrap.io'
+EMAIL_HOST_USER = '4ef4b514d33fdd'
+EMAIL_HOST_PASSWORD = 'bba302e1fa5c69'
+EMAIL_PORT = '2525'
+DEFAULT_FROM_EMAIL = "TSTORE <support@tstore.com>"

@@ -1,7 +1,9 @@
 from django.db import models
 from django.contrib.auth.models import AbstractUser, BaseUserManager, PermissionsMixin, AbstractBaseUser, User
 from django.utils.translation import gettext_lazy as _
-
+import pyotp
+from django.core.mail import send_mail
+from django.conf import settings
 
 # Create your models here.
 
@@ -41,9 +43,27 @@ class CustomUser(AbstractBaseUser):
     phone_number = models.CharField(max_length=15, blank=True, null=True)
     is_active = models.BooleanField(default=True)
     role = models.CharField(max_length=10, choices=RoleChoices.choices, default=RoleChoices.CUSTOMER)
+    otp_secret = models.CharField(max_length=50, blank=True, null=True)
+    
     
     USERNAME_FIELD = "email"
     REQUIRED_FIELDS = ["first_name", "last_name"]
     
     objects = CustomUserManager()
     
+    
+    def generate_otp(self):
+        if not self.otp_secret:
+            self.otp_secret = pyotp.random_base32()
+            self.save(update_fields=["otp_secret"])
+        totp = pyotp.TOTP(self.otp_secret, digits=4, interval=600)
+        return totp.now()
+
+    def verify_otp(self, otp):
+        totp = pyotp.TOTP(self.otp_secret, digits=4, interval=600)
+        return totp.verify(otp)
+    
+    
+    def email_user(self, subject, message, from_email=settings.DEFAULT_FROM_EMAIL, **kwargs):
+        """Send an email to this user."""
+        send_mail(subject, message, from_email, [self.email], **kwargs)
